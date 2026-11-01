@@ -1,5 +1,7 @@
 # Production Cut Planner / Corte de Produção
 
+**[Open the live app](https://factory-cut-planner.streamlit.app/)** · [GitHub repository](https://github.com/felipe-maia-vassalo/production-cut-planner)
+
 Streamlit application for finding product codes, calculating tube cuts from a bill of materials, and scheduling production across machines and shifts. Choose **English** or **Português (Brasil)** in the sidebar. English is the default language.
 
 The interface, instructions, validation messages, result tables, and Excel downloads follow the selected language. Product names, codes, machine names, and uploaded business descriptions retain their original values. The original Portuguese Excel input templates remain supported. Cut plans exported in either language can be uploaded again for scheduling.
@@ -66,7 +68,9 @@ No company spreadsheets are bundled in this repository. Uploads and results are 
 python -m unittest discover -s tests -v
 ```
 
-Tests generate synthetic Excel workbooks in memory and cover lookup, cutting, scheduling, and translation compatibility. No company data is included.
+All **19 automated tests passed**. Tests generate synthetic Excel workbooks in memory and cover lookup, cutting, scheduling, language switching with edited settings, and translation compatibility. No company data is included.
+
+Live cloud verification on 1 November 2026 (Python 3.13): synthetic workbook uploads; two found product names and one missing product; 1,000 products producing 3,000 cut pieces; all 3,000 pieces scheduled across two machines; Portuguese/English switching preserved the schedule; downloaded English cut/schedule workbooks reopened successfully with correct totals and zero-padded cut codes. Load testing and production-data validation were not performed.
 
 ## Deploy on Streamlit Community Cloud
 
