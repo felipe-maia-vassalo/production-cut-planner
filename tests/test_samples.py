@@ -191,6 +191,57 @@ class SampleAppTests(unittest.TestCase):
         app.radio(key="pagina").set_value(PAGES[3]).run()
         self.assertEqual(app.session_state["tabela_editor_metas_gerais"]["META/H"].tolist(), [320] * 7)
 
+    def test_sample_prefills_survive_hidden_widget_cleanup_and_remain_editable(self):
+        for language in ("en", "pt"):
+            with self.subTest(language=language):
+                app = sample_app(language)
+                app.button(key="carregar_dados_exemplo").click().run()
+                # The browser removes state belonging to widgets that are not
+                # rendered on the Instructions page. AppTest retains those
+                # values, so model that cleanup explicitly before navigation.
+                for key in ("texto_produtos_busca", "texto_codigos_cortes", "texto_quantidades_cortes"):
+                    if key in app.session_state:
+                        del app.session_state[key]
+                app.run()
+                app.run()
+
+                app.radio(key="pagina").set_value(PAGES[1]).run()
+                self.assertEqual(app.text_area(key="texto_produtos_busca").value, "\n".join(PRODUCTS))
+                app.button(key="botao_processar_produtos").click().run()
+                self.assert_healthy(app)
+                self.assertEqual(app.session_state["resultado_busca_produtos"]["CÓDIGO"].tolist(), CODES)
+
+                app.radio(key="pagina").set_value(PAGES[2]).run()
+                self.assertEqual(app.text_area(key="texto_codigos_cortes").value, "\n".join(CODES))
+                self.assertEqual(app.text_area(key="texto_quantidades_cortes").value, "100\n50\n25")
+                app.button(key="botao_calcular_cortes").click().run()
+                self.assert_healthy(app)
+                self.assertEqual(app.session_state["resultado_planejamento_cortes"]["resumo"]
+                                 ["total_de_pecas_cortadas"], 800)
+
+                # Prefilling must happen once: subsequent user edits must not
+                # be overwritten with the original sample quantities.
+                app.text_area(key="texto_quantidades_cortes").set_value("200\n50\n25").run()
+                app.run()
+                self.assertEqual(app.text_area(key="texto_quantidades_cortes").value, "200\n50\n25")
+                app.button(key="botao_calcular_cortes").click().run()
+                self.assert_healthy(app)
+                self.assertEqual(app.session_state["resultado_planejamento_cortes"]["resumo"]
+                                 ["total_de_pecas_cortadas"], 1400)
+
+                app.radio(key="pagina").set_value(PAGES[0]).run()
+                for key in ("texto_produtos_busca", "texto_codigos_cortes", "texto_quantidades_cortes"):
+                    if key in app.session_state:
+                        del app.session_state[key]
+                app.run()
+                app.radio(key="pagina").set_value(PAGES[2]).run()
+                self.assertEqual(app.text_area(key="texto_codigos_cortes").value, "\n".join(CODES))
+                self.assertEqual(app.text_area(key="texto_quantidades_cortes").value, "200\n50\n25")
+                app.button(key="botao_calcular_cortes").click().run()
+                self.assert_healthy(app)
+                self.assertEqual(app.session_state["resultado_planejamento_cortes"]["resumo"]
+                                 ["total_de_pecas_cortadas"], 1400)
+
 
 if __name__ == "__main__":
     unittest.main()

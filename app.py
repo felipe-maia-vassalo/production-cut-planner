@@ -204,14 +204,32 @@ def carregar_dados_exemplo():
     for chave in list(st.session_state):
         if chave.startswith(("inicio_turno_", "fim_turno_", "maquinas_participantes_turno_")):
             st.session_state.pop(chave, None)
-    st.session_state.update({
+    # Keep prefills outside widget keys until their page renders. Streamlit's
+    # browser cleanup can remove keys for widgets absent from the current page.
+    st.session_state["campos_exemplo_pendentes"] = {
         "texto_produtos_busca": "DEMO CHAIR\nDEMO TABLE\nDEMO FRAME",
         "texto_codigos_cortes": "900001\n900002\n900003",
         "texto_quantidades_cortes": "100\n50\n25",
+    }
+    st.session_state.update({
         "quantidade_turnos_programacao": 1,
         "maquinas_gargalo": [],
         "mostrar_confirmacao_exemplo": True,
     })
+
+
+def aplicar_campos_exemplo(*chaves):
+    pendentes = st.session_state.get("campos_exemplo_pendentes", {})
+    for chave in chaves:
+        if chave in pendentes:
+            st.session_state[chave] = pendentes.pop(chave)
+            salvar_campo_texto(chave)
+        elif chave not in st.session_state and "persistido_" + chave in st.session_state:
+            st.session_state[chave] = st.session_state["persistido_" + chave]
+
+
+def salvar_campo_texto(chave):
+    st.session_state["persistido_" + chave] = st.session_state[chave]
 
 
 def painel_dados_exemplo():
@@ -308,6 +326,7 @@ As metas iniciais são **320 peças/hora**; nas SIMECs, **20X48 = 200/h** e **40
 # PÁGINA 1 - BUSCAR CÓDIGOS DOS PRODUTOS
 # ==========================================================
 def pagina_buscar_codigos():
+    aplicar_campos_exemplo("texto_produtos_busca")
     st.title(tr("🏭 Corte de Produção", '🏭 Production Cut Planner'))
 
     st.write(
@@ -332,6 +351,7 @@ def pagina_buscar_codigos():
             "MCPE-3 T/R"
         ),
         key="texto_produtos_busca",
+        on_change=salvar_campo_texto, args=("texto_produtos_busca",),
     )
 
     if st.button(
@@ -463,6 +483,7 @@ def pagina_buscar_codigos():
 # PÁGINA 2 - PLANEJAMENTO DE CORTES
 # ==========================================================
 def pagina_planejamento_cortes():
+    aplicar_campos_exemplo("texto_codigos_cortes", "texto_quantidades_cortes")
     st.title(tr("✂️ Planejamento de Cortes", '✂️ Cut Planning'))
 
     st.write(
@@ -488,6 +509,7 @@ def pagina_planejamento_cortes():
                 "47976"
             ),
             key="texto_codigos_cortes",
+            on_change=salvar_campo_texto, args=("texto_codigos_cortes",),
         )
 
     with coluna_quantidades:
@@ -502,6 +524,7 @@ def pagina_planejamento_cortes():
                 "51"
             ),
             key="texto_quantidades_cortes",
+            on_change=salvar_campo_texto, args=("texto_quantidades_cortes",),
             help=tr("Informe uma quantidade por linha.", "Enter one positive whole number per line using digits only, for example 1000. Omit thousands separators and decimal marks."),
         )
 
