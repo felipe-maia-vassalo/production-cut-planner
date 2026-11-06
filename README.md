@@ -48,6 +48,8 @@ Each workbook includes English and Portuguese instructions. Keep the original sh
 
 For detailed operating instructions, open the app's **Instructions** page.
 
+Use the **Next** and **Back** buttons at the bottom of each page to follow the workflow. Next becomes available after processing product names or calculating a nonempty cut plan. Moving from cut planning to scheduling selects the cuts just calculated. The buttons preserve inputs, uploaded files, results, and machine settings. The sidebar remains available for direct navigation.
+
 ## Excel input formats
 
 Keep these original sheet and header names even when the interface is in English:
@@ -82,7 +84,7 @@ No company spreadsheets are bundled in this repository. Uploads and results are 
 python -m unittest discover -s tests -v
 ```
 
-All **25 automated tests passed**. Tests generate synthetic Excel workbooks in memory and cover lookup, cutting, scheduling, language switching with edited settings, and translation compatibility. The bundled samples are tested through product lookup, cut calculation, direct scheduling, and resetting the session in both languages. No company data is included.
+All **30 automated tests passed**. Tests generate synthetic Excel workbooks in memory and cover lookup, cutting, scheduling, language switching with edited settings, and translation compatibility. The bundled samples are tested through product lookup, cut calculation, direct scheduling, and resetting the session in both languages. No company data is included.
 
 Live cloud verification on 1 November 2026 (Python 3.13): synthetic workbook uploads; two found product names and one missing product; 1,000 products producing 3,000 cut pieces; all 3,000 pieces scheduled across two machines; Portuguese/English switching preserved the schedule; downloaded English cut/schedule workbooks reopened successfully with correct totals and zero-padded cut codes. Load testing and production-data validation were not performed.
 

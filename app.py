@@ -174,6 +174,83 @@ def editor_persistente(tabela, **opcoes):
 
 
 SAMPLES_DIR = Path(__file__).resolve().parent / "samples"
+PAGINAS = [
+    "📖 Instruções de uso", "🔎 Buscar códigos dos produtos",
+    "✂️ Planejamento de cortes", "📅 Programação das máquinas",
+]
+
+
+def salvar_campos_navegacao():
+    for chave in ("texto_produtos_busca", "texto_codigos_cortes", "texto_quantidades_cortes"):
+        if chave in st.session_state:
+            salvar_campo_texto(chave)
+    configuracao = st.session_state.setdefault("configuracao_programacao_salva", {})
+    for chave in list(st.session_state):
+        if chave in {"quantidade_turnos_programacao", "maquinas_gargalo", "origem_cortes"} or chave.startswith(
+            ("inicio_turno_", "fim_turno_", "maquinas_participantes_turno_")
+        ):
+            valor = st.session_state[chave]
+            configuracao[chave] = list(valor) if isinstance(valor, list) else valor
+
+
+def restaurar_configuracao_programacao():
+    for chave, valor in st.session_state.get("configuracao_programacao_salva", {}).items():
+        if chave not in st.session_state:
+            st.session_state[chave] = list(valor) if isinstance(valor, list) else valor
+    origem = st.session_state.pop("origem_programacao_pendente", None)
+    if origem is not None:
+        st.session_state["origem_cortes"] = origem
+
+
+def navegar_pagina(destino, usar_cortes_sessao=False):
+    salvar_campos_navegacao()
+    if usar_cortes_sessao:
+        st.session_state["origem_programacao_pendente"] = "Cortes calculados nesta sessão"
+    st.session_state["pagina"] = destino
+
+
+def botoes_navegacao(pagina_atual):
+    st.divider()
+    anterior, seguinte = st.columns(2)
+    if pagina_atual == PAGINAS[0]:
+        seguinte.button(
+            tr("Próximo: Buscar códigos dos produtos", "Next: Find product codes"),
+            key="nav_instrucoes_seguinte", on_click=navegar_pagina, args=(PAGINAS[1],),
+        )
+    elif pagina_atual == PAGINAS[1]:
+        anterior.button(
+            tr("Voltar às instruções", "Back to instructions"),
+            key="nav_busca_anterior", on_click=navegar_pagina, args=(PAGINAS[0],),
+        )
+        resultado = st.session_state.get("resultado_busca_produtos")
+        seguinte.button(
+            tr("Próximo: Planejamento de cortes", "Next: Cut planning"),
+            key="nav_busca_seguinte", on_click=navegar_pagina, args=(PAGINAS[2],),
+            disabled=resultado is None or resultado.empty,
+            help=tr("Processe os produtos antes de continuar.", "Process the products before continuing."),
+        )
+    elif pagina_atual == PAGINAS[2]:
+        anterior.button(
+            tr("Voltar à busca de códigos", "Back to product lookup"),
+            key="nav_cortes_anterior", on_click=navegar_pagina, args=(PAGINAS[1],),
+        )
+        resultado = st.session_state.get("resultado_planejamento_cortes")
+        pronto = resultado is not None and not resultado["cortes"].empty
+        seguinte.button(
+            tr("Próximo: Programação das máquinas", "Next: Machine scheduling"),
+            key="nav_cortes_seguinte", on_click=navegar_pagina, args=(PAGINAS[3], True),
+            disabled=not pronto,
+            help=tr("Calcule os cortes antes de continuar.", "Calculate the cuts before continuing."),
+        )
+    else:
+        anterior.button(
+            tr("Voltar ao planejamento de cortes", "Back to cut planning"),
+            key="nav_programacao_anterior", on_click=navegar_pagina, args=(PAGINAS[2],),
+        )
+        seguinte.button(
+            tr("Voltar às instruções", "Back to instructions"),
+            key="nav_programacao_inicio", on_click=navegar_pagina, args=(PAGINAS[0],),
+        )
 
 
 def carregar_dados_exemplo():
@@ -196,6 +273,7 @@ def carregar_dados_exemplo():
     for chave in (
         "resultado_busca_produtos", "resultado_planejamento_cortes",
         "resultado_programacao_maquinas", "origem_cortes",
+        "configuracao_programacao_salva", "origem_programacao_pendente",
     ):
         st.session_state.pop(chave, None)
     for chave in ("editor_capacidade", "editor_metas_gerais", "editor_excecoes"):
@@ -659,6 +737,7 @@ def pagina_planejamento_cortes():
 # PÁGINA 3 - PROGRAMAÇÃO DAS MÁQUINAS
 # ==========================================================
 def pagina_programacao_maquinas():
+    restaurar_configuracao_programacao()
     st.title(tr("📅 Programação das Máquinas", '📅 Machine Scheduling'))
 
     st.write(tr("Use os cortes calculados no app ou envie um planejamento já salvo em Excel.", 'Use cuts calculated in this app or upload a saved Excel cut plan.'))
@@ -1074,13 +1153,9 @@ st.sidebar.title(tr("Navegação", 'Navigation'))
 
 pagina = st.sidebar.radio(
     tr("Página", 'Page'),
-    [
-        "📖 Instruções de uso",
-        "🔎 Buscar códigos dos produtos",
-        "✂️ Planejamento de cortes",
-        "📅 Programação das máquinas",
-    ],
+    PAGINAS,
     key="pagina",
+    on_change=salvar_campos_navegacao,
     format_func={
         "📖 Instruções de uso": tr("📖 Instruções de uso", "📖 How to use"),
         "🔎 Buscar códigos dos produtos": tr("🔎 Buscar códigos dos produtos", "🔎 Find product codes"),
@@ -1097,3 +1172,5 @@ elif pagina == "✂️ Planejamento de cortes":
     pagina_planejamento_cortes()
 else:
     pagina_programacao_maquinas()
+
+botoes_navegacao(pagina)
