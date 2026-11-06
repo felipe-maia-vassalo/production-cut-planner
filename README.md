@@ -28,6 +28,20 @@ python -m streamlit run app.py
 
 ## Workflow
 
+### Try the fictional sample files
+
+Open **How to use → Try sample data** in the live app. Download the three sample workbooks or click **Load sample data** to populate the current session. This replaces the current files, input fields, and machine settings with the examples. Then run **Find product codes → Process**, **Cut planning → Calculate cuts**, and **Machine scheduling → Schedule machines**.
+
+The example order is 100 units of DEMO CHAIR A, 50 of DEMO TABLE B, and 25 of DEMO FRAME C. It produces **800 cut pieces across four cut codes**. The scheduling page also has a matching sample cut plan ready to use, so you can test scheduling directly. All products and measurements in these files are invented.
+
+- [Sample structures](samples/sample_structures.xlsx): bill of materials for product lookup and cut calculation.
+- [Sample product mapping](samples/sample_product_mapping.xlsx): translates the sample order names to sample product codes.
+- [Sample cut plan](samples/sample_cut_plan.xlsx): ready-to-upload English cut plan for scheduling.
+
+Each workbook includes English and Portuguese instructions. Keep the original sheet names and headers when editing them.
+
+### Use your own files
+
 1. **Find product codes:** upload the structures workbook and the product mapping workbook, paste one product name per line, and process. Review ambiguous or missing matches.
 2. **Cut planning:** upload the structures workbook and enter one product code and one quantity per line. The lists must have the same length. In English, enter quantities as digits without separators (for example `1000`). Calculate and review the cuts.
 3. **Machine scheduling:** use cuts from the current session or upload an exported cut plan. Configure shifts, participating machines, bottlenecks, production targets, expected losses, and authorized overtime. Generate the schedule and review any unallocated pieces.
@@ -68,7 +82,7 @@ No company spreadsheets are bundled in this repository. Uploads and results are 
 python -m unittest discover -s tests -v
 ```
 
-All **19 automated tests passed**. Tests generate synthetic Excel workbooks in memory and cover lookup, cutting, scheduling, language switching with edited settings, and translation compatibility. No company data is included.
+All **24 automated tests passed**. Tests generate synthetic Excel workbooks in memory and cover lookup, cutting, scheduling, language switching with edited settings, and translation compatibility. The bundled samples are tested through product lookup, cut calculation, direct scheduling, and resetting the session in both languages. No company data is included.
 
 Live cloud verification on 1 November 2026 (Python 3.13): synthetic workbook uploads; two found product names and one missing product; 1,000 products producing 3,000 cut pieces; all 3,000 pieces scheduled across two machines; Portuguese/English switching preserved the schedule; downloaded English cut/schedule workbooks reopened successfully with correct totals and zero-padded cut codes. Load testing and production-data validation were not performed.
 

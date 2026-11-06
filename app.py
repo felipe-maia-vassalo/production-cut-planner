@@ -4,6 +4,7 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 from datetime import datetime, timedelta, time
+from pathlib import Path
 from i18n import (
     set_language, tr, localized_frame, source_frame, localized_error,
     excel_sheet, format_integer, column_label,
@@ -172,9 +173,92 @@ def editor_persistente(tabela, **opcoes):
     return resultado
 
 
+SAMPLES_DIR = Path(__file__).resolve().parent / "samples"
+
+
+def carregar_dados_exemplo():
+    """Load the public fictional workbooks into this session only."""
+    arquivos = {
+        "upload_estrutura_busca": "sample_structures.xlsx",
+        "upload_estrutura_cortes": "sample_structures.xlsx",
+        "upload_de_para": "sample_product_mapping.xlsx",
+        "upload_planejamento": "sample_cut_plan.xlsx",
+    }
+    # Read everything before changing the session, so an incomplete package
+    # cannot replace only some of the user's inputs.
+    fontes = {
+        chave: {"nome": nome, "dados": (SAMPLES_DIR / nome).read_bytes()}
+        for chave, nome in arquivos.items()
+    }
+    for chave, fonte in fontes.items():
+        st.session_state.pop(chave, None)
+        st.session_state["fonte_" + chave] = fonte
+    for chave in (
+        "resultado_busca_produtos", "resultado_planejamento_cortes",
+        "resultado_programacao_maquinas", "origem_cortes",
+    ):
+        st.session_state.pop(chave, None)
+    for chave in ("editor_capacidade", "editor_metas_gerais", "editor_excecoes"):
+        for prefixo in ("", "base_", "tabela_"):
+            st.session_state.pop(prefixo + chave, None)
+    for chave in list(st.session_state):
+        if chave.startswith(("inicio_turno_", "fim_turno_", "maquinas_participantes_turno_")):
+            st.session_state.pop(chave, None)
+    st.session_state.update({
+        "texto_produtos_busca": "DEMO CHAIR\nDEMO TABLE\nDEMO FRAME",
+        "texto_codigos_cortes": "900001\n900002\n900003",
+        "texto_quantidades_cortes": "100\n50\n25",
+        "quantidade_turnos_programacao": 1,
+        "maquinas_gargalo": [],
+        "mostrar_confirmacao_exemplo": True,
+    })
+
+
+def painel_dados_exemplo():
+    with st.container(border=True):
+        st.subheader(tr("Teste com dados de exemplo", "Try sample data"))
+        st.write(tr(
+            "Use três produtos fictícios para testar todas as atividades. As planilhas incluem instruções em português e inglês.",
+            "Try every activity with three fictional products. The workbooks include instructions in English and Portuguese.",
+        ))
+        opcoes = (
+            ("sample_structures.xlsx", "Estruturas de exemplo", "Sample structures", "structures"),
+            ("sample_product_mapping.xlsx", "DE-PARA de exemplo", "Sample product mapping", "mapping"),
+            ("sample_cut_plan.xlsx", "Plano de cortes de exemplo", "Sample cut plan", "cuts"),
+        )
+        for coluna, (nome, pt, en, chave) in zip(st.columns(3), opcoes):
+            coluna.download_button(
+                tr(pt, en), data=(SAMPLES_DIR / nome).read_bytes(),
+                file_name=nome,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key="sample_download_" + chave, on_click="ignore",
+            )
+        st.button(
+            tr("Carregar dados de exemplo", "Load sample data"),
+            key="carregar_dados_exemplo", on_click=carregar_dados_exemplo,
+        )
+        st.caption(tr(
+            "Substitui os arquivos, campos e configurações de máquinas desta sessão pelos exemplos.",
+            "Replaces this session's files, input fields and machine settings with the examples.",
+        ))
+        if st.session_state.pop("mostrar_confirmacao_exemplo", False):
+            st.success(tr("Dados de exemplo carregados.", "Sample data loaded."))
+        st.markdown(tr(
+            "1. Clique em **Carregar dados de exemplo**.\n"
+            "2. Abra **Buscar códigos dos produtos** e clique em **Processar**. Os três produtos devem ser encontrados.\n"
+            "3. Abra **Planejamento de cortes** e clique em **Calcular cortes**. O resultado esperado é **800 peças**, em quatro cortes.\n"
+            "4. Abra **Programação das máquinas** e clique em **Organizar programação das máquinas**. Um plano de cortes de exemplo já estará selecionado. Você também pode escolher os cortes calculados nesta sessão.",
+            "1. Click **Load sample data**.\n"
+            "2. Open **Find product codes** and click **Process**. All three products should be found.\n"
+            "3. Open **Cut planning** and click **Calculate cuts**. Expect **800 pieces** across four cuts.\n"
+            "4. Open **Machine scheduling** and click **Schedule machines**. A matching sample cut plan is already selected. You can also choose the cuts calculated this session.",
+        ))
+
+
 def pagina_instrucoes():
     st.title(tr("🏭 Corte de Produção — Como usar", '🏭 Production Cut Planner — How to use'))
     st.write(tr("Use o menu à esquerda para abrir cada atividade. Envie as planilhas nos campos indicados; você não precisa organizar pastas no computador.", 'Use the menu on the left to open each task. Upload your spreadsheets in the indicated fields.'))
+    painel_dados_exemplo()
     st.subheader(tr("Antes de começar", 'Before you start'))
     st.markdown(tr("""
 - Tenha as planilhas atualizadas em **Excel (.xlsx ou .xlsm)**. Mantenha os nomes das abas e os cabeçalhos originais.

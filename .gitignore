@@ -5,6 +5,9 @@ venv/
 .DS_Store
 .streamlit/secrets.toml
 *.xlsx
+!samples/sample_structures.xlsx
+!samples/sample_product_mapping.xlsx
+!samples/sample_cut_plan.xlsx
 *.xlsm
 *.xls
 *.zip

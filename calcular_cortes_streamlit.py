@@ -163,7 +163,7 @@ def localizar_cabecalho(aba):
     obrigatorias = {"PRODUTO", "COD.", "QUANT"}
 
     for numero_linha, linha in enumerate(
-        aba.iter_rows(min_row=1, max_row=min(50, aba.max_row)), start=1
+        aba.iter_rows(min_row=1, max_row=min(50, aba.max_row or 50)), start=1
     ):
         colunas = {}
 
